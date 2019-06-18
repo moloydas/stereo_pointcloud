@@ -32,6 +32,18 @@ cv::Ptr<cv::stereo::StereoBinarySGBM> sgbm;
 
 clock_t start, end;
 
+
+int minDisparity = 0;
+int blockSize = 5;
+int numDisparities = 320;
+int preFilterCap = 31;
+int uniquenessRatio = 10;
+int speckleWindowSize = 150;
+int speckleRange = 8;
+int disp12MaxDiff = 10;
+int P1 = 8*3*blockSize*blockSize;
+int P2 = 32*3*blockSize*blockSize;
+
 void image_callback(const sensor_msgs::ImageConstPtr& left_img_msg, const sensor_msgs::ImageConstPtr& right_img_msg){
     try{
       left_cv_ptr = cv_bridge::toCvCopy(left_img_msg, sensor_msgs::image_encodings::BGR8);
@@ -88,17 +100,6 @@ int main(int argc, char **argv){
 
     left_cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage);
     right_cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage);
-
-    int minDisparity = 0;
-    int blockSize = 5;
-    int numDisparities = 192;
-    int preFilterCap = 4;
-    int uniquenessRatio = 5;
-    int speckleWindowSize = 200;
-    int speckleRange = 2;
-    int disp12MaxDiff = 1;
-    int P1 = 100;
-    int P2 = 1000;
 
     sgbm = cv::stereo::StereoBinarySGBM::create(minDisparity,
                                                 numDisparities,
