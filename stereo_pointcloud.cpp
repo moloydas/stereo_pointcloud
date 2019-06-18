@@ -61,13 +61,17 @@ void image_callback(const sensor_msgs::ImageConstPtr& left_img_msg, const sensor
     }
 
     cv::Mat disp,disp8,raw_dis;
+    cv::Mat left_img_color,right_img_color;
     cv::Mat left_img,right_img;
-    cv::cvtColor(left_cv_ptr->image,  left_img,  cv::COLOR_BGR2GRAY);
-    cv::cvtColor(right_cv_ptr->image, right_img, cv::COLOR_BGR2GRAY);
+    cv::resize(left_cv_ptr->image ,left_img_color ,cv::Size(),0.5,0.5);
+    cv::resize(right_cv_ptr->image ,right_img_color ,cv::Size(),0.5,0.5);
+    cv::cvtColor(left_img_color,  left_img,  cv::COLOR_BGR2GRAY);
+    cv::cvtColor(right_img_color, right_img, cv::COLOR_BGR2GRAY);
 
     start = clock();
-    sgbm->compute( left_img, right_img, disp);    
-    cv::ximgproc::getDisparityVis(disp, disp8, 5);
+    sgbm->compute( left_img, right_img, disp);
+    cv::ximgproc::getDisparityVis(disp, disp8, 1);
+    // cv::normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
     end = clock();
 
     std::cout << "disp size:" << disp.size() << " compute time: " << double(end-start)/double(CLOCKS_PER_SEC)<< std::endl;
@@ -75,7 +79,8 @@ void image_callback(const sensor_msgs::ImageConstPtr& left_img_msg, const sensor
     cv::Mat stereo_image(left_cv_ptr->image.rows, (left_cv_ptr->image.cols)*2, CV_8UC3, cv::Scalar(0,0,0));
     left_cv_ptr->image.copyTo(stereo_image(cv::Rect(0,0,left_cv_ptr->image.cols,left_cv_ptr->image.rows)));
     right_cv_ptr->image.copyTo(stereo_image(cv::Rect(left_cv_ptr->image.cols,0,right_cv_ptr->image.cols,right_cv_ptr->image.rows)));
-    cv::imshow("stereo_image", stereo_image);
+    // cv::imshow("stereo_image", stereo_image);
+    cv::imshow("stereo_image", left_img_color);
     cv::imshow("disparity", disp8);
     cv::waitKey(30);
 }
