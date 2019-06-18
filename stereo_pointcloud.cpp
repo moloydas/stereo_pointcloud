@@ -50,6 +50,32 @@ int disp12MaxDiff = 10;
 int P1 = 8*3*blockSize*blockSize;
 int P2 = 32*3*blockSize*blockSize;
 
+void set_params(){
+    sgbm->setMinDisparity(minDisparity);
+    if (preFilterCap % 2 == 0){
+        preFilterCap = preFilterCap + 1;
+    }
+    sgbm->setPreFilterCap(preFilterCap);
+    sgbm->setUniquenessRatio(uniquenessRatio);
+    sgbm->setSpeckleWindowSize(speckleWindowSize);
+    sgbm->setSpeckleRange(speckleRange);
+    sgbm->setDisp12MaxDiff(disp12MaxDiff);
+    if (P1 >= P2/2){
+        P2 = P1*2 + 1;
+        cv::setTrackbarPos("P2","Track Bar Window",P2);
+    }
+    else if(P1 <= 0){
+        P1 = 1;
+        cv::setTrackbarPos("P1","Track Bar Window",P1);
+    }
+    else if(P2 <= 0){
+        P2 = 1;
+        cv::setTrackbarPos("P2","Track Bar Window",P2);
+    }
+    sgbm->setP2(P2);
+    sgbm->setP1(P1);
+}
+
 void image_callback(const sensor_msgs::ImageConstPtr& left_img_msg, const sensor_msgs::ImageConstPtr& right_img_msg){
     try{
       left_cv_ptr = cv_bridge::toCvCopy(left_img_msg, sensor_msgs::image_encodings::BGR8);
@@ -159,6 +185,15 @@ int main(int argc, char **argv){
 
     cv::namedWindow("stereo_image",cv::WINDOW_NORMAL);	
     cv::namedWindow("disparity",cv::WINDOW_NORMAL);
+    cv::namedWindow("Track Bar Window", CV_WINDOW_NORMAL);
+    cvCreateTrackbar("Pre Filter Cap", "Track Bar Window", &preFilterCap, 61);
+    cvCreateTrackbar("Minimum Disparity", "Track Bar Window", &minDisparity, 200);
+    cvCreateTrackbar("Uniqueness Ratio", "Track Bar Window", &uniquenessRatio, 30);
+    cvCreateTrackbar("Speckle Range", "Track Bar Window", &speckleRange, 500);
+    cvCreateTrackbar("Speckle Window Size", "Track Bar Window", &speckleWindowSize, 300);
+    cvCreateTrackbar("P1", "Track Bar Window", &P1, 10000);
+    cvCreateTrackbar("P2", "Track Bar Window", &P2, 10000);
+
     cv::startWindowThread();
 
     pc = pcl::PointCloud<PointType>::PointCloud::Ptr(new pcl::PointCloud<PointType>);
@@ -171,6 +206,7 @@ int main(int argc, char **argv){
 
     while(ros::ok()){
 
+        set_params();
         ros::spinOnce();
 
         loop_rate.sleep();
