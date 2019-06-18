@@ -31,6 +31,13 @@ cv::Ptr<cv::stereo::StereoBinarySGBM> sgbm;
 
 clock_t start, end;
 
+typedef pcl::PointXYZRGB  PointType;
+pcl::PointCloud<PointType>::Ptr pc;
+PointType pt;
+
+float Q_matrix[] = {1,0,0,-606.146/2,0,1,0,-332.562/2,0,0,0,699.921/2,0,0,1/.120193,0};
+cv::Mat Q_mat(4,4,CV_32FC1,Q_matrix);
+cv::Mat _3d_img;
 
 int minDisparity = 0;
 int blockSize = 5;
@@ -73,6 +80,39 @@ void image_callback(const sensor_msgs::ImageConstPtr& left_img_msg, const sensor
     cv::ximgproc::getDisparityVis(disp, disp8, 1);
     // cv::normalize(disp, disp8, 0, 255, CV_MINMAX, CV_8U);
     end = clock();
+
+    double BaseLine = 120.193;
+    double f = 699.921;
+    uint32_t r,g,b,rgb;
+    double disparity = 0;
+
+    pc->clear();
+    cv::reprojectImageTo3D(disp8, _3d_img, Q_mat, true, CV_32F);
+
+    cv::Vec3b pixel;
+    for(int i=0; i<disp.rows; i++){
+        for(int j=0; j<disp.cols; j++){
+			disparity = disp.at<double>(i,j);
+			if (disparity == 0) continue;
+			cv::Point3f p = _3d_img.at<cv::Point3f>(i, j);
+			pt.x = p.x;
+			pt.y = p.y;
+			pt.z = p.z;
+            pixel = left_img_color.at<cv::Vec3b>(i,j);
+            b = pixel[0];
+            g = pixel[1];
+            r = pixel[2];
+            rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+            pt.rgb = *reinterpret_cast<float*>(&rgb);
+            pc->push_back(pt);
+        }
+    }
+
+    sensor_msgs::PointCloud2 pc_msg;
+    pcl::toROSMsg(*pc, pc_msg);
+    pc_msg.header.frame_id = "left_camera";
+    pc_msg.header.stamp = ros::Time::now();
+    pc_pub.publish(pc_msg);
 
     std::cout << "disp size:" << disp.size() << " compute time: " << double(end-start)/double(CLOCKS_PER_SEC)<< std::endl;
 
@@ -120,6 +160,11 @@ int main(int argc, char **argv){
     cv::namedWindow("stereo_image",cv::WINDOW_NORMAL);	
     cv::namedWindow("disparity",cv::WINDOW_NORMAL);
     cv::startWindowThread();
+
+    pc = pcl::PointCloud<PointType>::PointCloud::Ptr(new pcl::PointCloud<PointType>);
+
+	std::cout << Q_mat << std::endl;
+
     ros::Rate loop_rate(20);
 
     ROS_INFO("\nStereo PointCloud node started!!!\n");
