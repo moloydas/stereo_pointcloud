@@ -23,10 +23,9 @@
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
-ros::Publisher pub;
+ros::Publisher pc_pub;
 cv_bridge::CvImagePtr left_cv_ptr;
 cv_bridge::CvImagePtr right_cv_ptr;
-image_transport::Publisher pc_pub;
 
 cv::Ptr<cv::stereo::StereoBinarySGBM> sgbm;
 
@@ -96,7 +95,7 @@ int main(int argc, char **argv){
     message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), image_left_sub, image_right_sub);
     sync.registerCallback(boost::bind(&image_callback, _1, _2));
 
-    pc_pub = it.advertise("pointcloud",1);
+    pc_pub = n.advertise<sensor_msgs::PointCloud2>("pointcloud", 1);
 
     left_cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage);
     right_cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage);
